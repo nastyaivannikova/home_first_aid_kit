@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Prodject_SQLdb</string>
+    <string name="id_title_hint">Название</string>
+    <string name="id_desc_hint">Комментарий</string>
+    <string name="id_quality_hint">Количество</string>
+    <string name="id_type_hint">Тип</string>
+    <string name="id_food_hint">Связь с едой</string>
+    <string name="id_exp_date_hint">Срок годности</string>
+    <string name="id_time_hint">Время приема</string>
+    <string name="id_aid_title_hint">Название</string>
+    <string name="textview">TextView</string>
+    <string name="empty">Empty</string>
+    <string name="add">Add</string>
+    <string name="save">Save</string>
+</resources>
