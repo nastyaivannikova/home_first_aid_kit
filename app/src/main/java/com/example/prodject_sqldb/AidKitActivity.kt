@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.prodject_sqldb.db.DbAidManager
 import com.example.prodject_sqldb.db.MyAidAdapter
+import com.example.prodject_sqldb.db.MyIntentAidConstants
 
 class AidKitActivity : AppCompatActivity() {
 
@@ -53,6 +54,15 @@ class AidKitActivity : AppCompatActivity() {
         val swapHelper = getSwagMg()
         swapHelper.attachToRecyclerView(rcAidView)
         rcAidView.adapter = myAidAdapter
+
+        myAidAdapter.setOnAidLongClickListener(object : MyAidAdapter.OnAidLongClickListener {
+            override fun onAidLongClick(position: Int) {
+                val intent = Intent(this@AidKitActivity, EditAidActivity::class.java)
+                intent.putExtra(MyIntentAidConstants.I_ID_AID_KEY, myAidAdapter.listArray[position].id)
+                intent.putExtra(MyIntentAidConstants.I_TITLE_AID_KEY, myAidAdapter.listArray[position].title)
+                startActivity(intent)
+            }
+        })
     }
 
     private fun initSearchView() {

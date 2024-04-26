@@ -19,13 +19,14 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
     var listArray = listMain
     var context = contextM
     var backgroundColors = HashMap<Int, Int>()
+    private var onAidLongClickListener: OnAidLongClickListener? = null
 
 
     init {
         updateColors(0)
     }
 
-    class MyHolder(itemView: View, contextV: Context) : RecyclerView.ViewHolder(itemView) {
+    class MyHolder(itemView: View, contextV: Context, private val onAidLongClickListener: OnAidLongClickListener) : RecyclerView.ViewHolder(itemView) {
         val tvAidTitle = itemView.findViewById<TextView>(R.id.tvAidTitle)
         var context = contextV
 
@@ -40,12 +41,22 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
                 }
                 context.startActivity(intent)
             }
+            itemView.setOnLongClickListener {
+                    onAidLongClickListener.onAidLongClick(adapterPosition)
+                    true
+            }
         }
+    }
+
+    fun setOnAidLongClickListener(listener: OnAidLongClickListener) {
+        this.onAidLongClickListener = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyHolder {
         val inflater = LayoutInflater.from(parent.context)
-        return MyHolder(inflater.inflate(R.layout.rc_aid, parent, false), context)
+        return MyHolder(inflater.inflate(R.layout.rc_aid, parent, false), context,
+            onAidLongClickListener!!
+        )
     }
 
     override fun getItemCount(): Int {
@@ -53,24 +64,9 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
         return listArray.size
     }
 
-    override fun onBindViewHolder(holder: MyHolder, position: Int) {
-        holder.setData(listArray[position])
 
-        val backgroundColor = if (position % 2 == 0) {
-            ContextCompat.getColor(context, R.color.light_green)
-        } else {
-            ContextCompat.getColor(context, R.color.beige)
-        }
-
-        val colorStateList = ColorStateList.valueOf(backgroundColor)
-
-        val drawable = GradientDrawable().apply {
-            shape = GradientDrawable.RECTANGLE
-            cornerRadius = 20f
-            color = colorStateList
-        }
-
-        holder.itemView.background = drawable
+    interface OnAidLongClickListener {
+        fun onAidLongClick(position: Int)
     }
 
     @SuppressLint("NotifyDataSetChanged")
