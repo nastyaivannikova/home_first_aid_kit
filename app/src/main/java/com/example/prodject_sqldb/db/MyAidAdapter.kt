@@ -64,6 +64,25 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
         return listArray.size
     }
 
+    override fun onBindViewHolder(holder: MyHolder, position: Int) {
+        holder.setData(listArray[position])
+
+        val backgroundColor = if (position % 2 == 0) {
+            ContextCompat.getColor(context, R.color.light_green)
+        } else {
+            ContextCompat.getColor(context, R.color.beige)
+        }
+
+        val colorStateList = ColorStateList.valueOf(backgroundColor)
+
+        val drawable = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 20f
+            color = colorStateList
+        }
+
+        holder.itemView.background = drawable
+    }
 
     interface OnAidLongClickListener {
         fun onAidLongClick(position: Int)

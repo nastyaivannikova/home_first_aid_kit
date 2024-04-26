@@ -33,7 +33,7 @@ class TimeCheckService(appContext: Context, workerParams: WorkerParameters) : Wo
         }
 
         val notification = NotificationCompat.Builder(applicationContext, NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_add)
+            .setSmallIcon(R.drawable.ic_aid)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

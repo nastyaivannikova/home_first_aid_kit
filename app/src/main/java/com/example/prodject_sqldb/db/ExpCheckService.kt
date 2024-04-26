@@ -95,7 +95,7 @@ class ExpCheckService(appContext: Context, workerParams: WorkerParameters) : Wor
         val notification = NotificationCompat.Builder(context, "channel_id")
             .setContentTitle("Medicine Expiry Notification")
             .setContentText(message)
-            .setSmallIcon(R.drawable.ic_add)
+            .setSmallIcon(R.drawable.ic_aid)
             .build()
 
         notificationManager.notify(1, notification)
