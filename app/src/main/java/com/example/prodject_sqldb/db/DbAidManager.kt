@@ -56,8 +56,8 @@ class DbAidManager(context: Context) {
             val values = ContentValues().apply {
                 put(DbAidKit.COLUMN_NAME_ID, updatedId)
             }
-            val selection = "${DbAidKit.COLUMN_NAME_ID}=$id"
-            db?.update(DbAidKit.TABLE_NAME, values, selection, null)
+            val selectionDb = "${DbAidKit.COLUMN_NAME_ID}=$id"
+            db?.update(DbAidKit.TABLE_NAME, values, selectionDb, null)
             updateIdAidForAllItems(id, updatedId)
             ++updatedId
         }
@@ -83,19 +83,21 @@ class DbAidManager(context: Context) {
         val dataList = ArrayList<ListAidItem>()
         val selection = "${DbAidKit.COLUMN_NAME_TITLE} like ?"
         val cursor = db?.query(DbAidKit.TABLE_NAME, null, selection, arrayOf("%$searchText%"), null, null, null)
-        while(cursor?.moveToNext()!!) { //not null
-            val dataTitle = cursor.getString(cursor.getColumnIndexOrThrow(DbAidKit.COLUMN_NAME_TITLE))
-            val dataId = cursor.getInt(cursor.getColumnIndexOrThrow(DbAidKit.COLUMN_NAME_ID))
-            val item = ListAidItem()
-            item.title = dataTitle
-            item.id = dataId
-            dataList.add(item)
+        cursor?.use {
+            while (it.moveToNext()) {
+                val dataTitle = it.getString(it.getColumnIndexOrThrow(DbAidKit.COLUMN_NAME_TITLE))
+                val dataId = it.getInt(it.getColumnIndexOrThrow(DbAidKit.COLUMN_NAME_ID))
+                val item = ListAidItem()
+                item.title = dataTitle
+                item.id = dataId
+                dataList.add(item)
+            }
         }
-        cursor.close()
         return dataList
     }
 
     fun closeDb() {
         dbAidHelper.close()
+        dbHelper.close()
     }
 }

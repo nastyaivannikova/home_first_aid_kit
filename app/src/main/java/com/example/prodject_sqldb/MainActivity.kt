@@ -1,41 +1,22 @@
 package com.example.prodject_sqldb
 
-import android.app.AlarmManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.Context
+import android.app.AlertDialog
 import android.content.Intent
-import android.icu.util.Calendar
 import android.os.Build
-import java.util.concurrent.TimeUnit
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.SearchView
 import android.widget.TextView
 import androidx.annotation.RequiresApi
-import androidx.core.app.NotificationCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.work.Constraints
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.example.prodject_sqldb.db.AlarmReceiver
 import com.example.prodject_sqldb.db.DbAidManager
 import com.example.prodject_sqldb.db.DbManager
-import com.example.prodject_sqldb.db.DbNameClass
-import com.example.prodject_sqldb.db.ExpirationWorkRequest
-//import com.example.prodject_sqldb.db.ExpCheckService
-import com.example.prodject_sqldb.db.ListItem
 import com.example.prodject_sqldb.db.MyAdapter
 import com.example.prodject_sqldb.db.MyIntentAidConstants
 import com.example.prodject_sqldb.db.MyIntentConstans
-import java.time.Duration
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,9 +29,9 @@ class MainActivity : AppCompatActivity() {
     var tvAidOnMAVisible = true
 
 
-    val dbManager = DbManager(this)
-    val dbAidManager = DbAidManager(this)
+    lateinit var dbManager: DbManager
     val myAdapter = MyAdapter(ArrayList(), this)
+    var dbAidManager = DbAidManager(this)
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,9 +39,7 @@ class MainActivity : AppCompatActivity() {
         idAid = intent.getIntExtra(MyIntentAidConstants.I_ID_AID_KEY, 0)
         aidTitle = intent.getStringExtra(MyIntentAidConstants.I_TITLE_AID_KEY)!!
         setContentView(R.layout.activity_main)
-
-//        val serviceIntent = Intent(this, ExpCheckService::class.java)
-//        startService(serviceIntent)
+        dbManager = DbManager(this)
 
         rcView = findViewById<RecyclerView>(R.id.rcView)
         tvNoElements = findViewById<TextView>(R.id.tvNoElements)
@@ -71,14 +50,10 @@ class MainActivity : AppCompatActivity() {
         initSearchView()
     }
 
-
-
-   // @RequiresApi(Build.VERSION_CODES.O)
     override fun onResume() {
         super.onResume()
         dbManager.openDb()
         dbAidManager.openDb()
-       // Log.d("MyLog", idAid.toString());
         fillAdapter()
     }
 
@@ -93,7 +68,6 @@ class MainActivity : AppCompatActivity() {
             putExtra(MyIntentConstans.I_ID_AID_KEY, idAid)
         }
         startActivity(i)
-//        //Log.d("MyLog", "Main idAid to Edit " + idAid.toString());
     }
 
     fun onClickMenu(view: View) {
@@ -102,12 +76,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun init() {
-        //if (idAid == idConst) {
         rcView.layoutManager = LinearLayoutManager(this)
         val swapHelper = getSwagMg()
         swapHelper.attachToRecyclerView(rcView)
         rcView.adapter = myAdapter
-        //}
     }
 
     private fun initSearchView() {
@@ -118,9 +90,9 @@ class MainActivity : AppCompatActivity() {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 if (newText.isNullOrEmpty()) {
-                    tvAidOnMA.visibility = View.VISIBLE // Показать TextView при пустом запросе
+                    tvAidOnMA.visibility = View.VISIBLE
                 } else {
-                    tvAidOnMA.visibility = View.GONE // Скрыть TextView при активном поиске
+                    tvAidOnMA.visibility = View.GONE
                 }
                 val list = dbManager.readDbData(newText!!,idAid)
                 myAdapter.updateAdapter(list)
@@ -152,31 +124,25 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                myAdapter.removeItem(viewHolder.adapterPosition, dbManager)
-
+                val position = viewHolder.adapterPosition
+                val itemName = myAdapter.getItemName(position)
+                showConfirmationDialog(itemName, position)
             }
-
         })
     }
 
-    private fun createNotificationChannel(name: String, description: String, importance: Int) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(name, description, importance)
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
-    private fun sendNotification(title: String, message: String, id: Int) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val notification = NotificationCompat.Builder(this, "my_channel_id")
-            .setSmallIcon(R.drawable.ic_add)
-            .setContentTitle(title)
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(id, notification)
+    private fun showConfirmationDialog(itemName: String, position: Int) {
+        AlertDialog.Builder(this)
+            .setTitle("Удаление лекарства")
+            .setMessage("Вы уверены, что хотите удалить лекарство $itemName?")
+            .setPositiveButton("Yes") { dialog, _ ->
+                myAdapter.removeItem(position, dbManager)
+                dialog.dismiss()
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                myAdapter.restoreItem(position)
+                dialog.dismiss()
+            }
+            .show()
     }
 }

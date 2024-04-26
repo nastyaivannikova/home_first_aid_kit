@@ -6,4 +6,6 @@
     <color name="grey">#818181</color>
     <color name="light_green">#A3BAB4</color>
     <color name="beige">#EAE5E2</color>
+    <color name="beige_back">#F4F2EF</color>
+    <color name="red">#CBFF0000</color>
 </resources>

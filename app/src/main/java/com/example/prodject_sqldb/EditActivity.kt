@@ -1,32 +1,33 @@
 package com.example.prodject_sqldb
 
 import android.annotation.SuppressLint
-import android.app.AlarmManager
 import android.app.DatePickerDialog
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
-import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.TimePicker
-import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import com.example.prodject_sqldb.db.AlarmReceiver
+import androidx.work.Constraints
+import androidx.work.Data
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.prodject_sqldb.db.DbManager
-import com.example.prodject_sqldb.db.MyIntentAidConstants
+import com.example.prodject_sqldb.db.ExpCheckService
 import com.example.prodject_sqldb.db.MyIntentConstans
+import com.example.prodject_sqldb.db.TimeCheckService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 class EditActivity : AppCompatActivity() {
+    private lateinit var workManager: WorkManager
 
     var id = 0
     var isEditState = false
@@ -39,13 +40,13 @@ class EditActivity : AppCompatActivity() {
     lateinit var edDesc: TextView
     lateinit var fbEdit: FloatingActionButton
     val dbManager = DbManager(this)
-    //val idAid = intent.getIntExtra(MyIntentAidConstants.I_ID_AID_KEY, -1)
     var idAid = 0
 
     @SuppressLint("MissingInflatedId")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.edit_activity)
+        workManager = WorkManager.getInstance(this)
         idAid = intent.getIntExtra(MyIntentConstans.I_ID_AID_KEY, -1)
 
 
@@ -67,8 +68,72 @@ class EditActivity : AppCompatActivity() {
         }
 
         getMyIntents()
-        Log.d("MyLog", "intents: " + getMyIntents().toString())
-        //Log.d("MyLog", "Edit idAid " + intent.getIntExtra(MyIntentConstans.I_ID_AID_KEY, -1).toString());
+    }
+
+    fun scheduleMedicationCheckWork(context: Context) {
+        val constraints = Constraints.Builder()
+            .build()
+
+        val currentTime = Calendar.getInstance()
+        val scheduledTime = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 10)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+        }
+        var initialDelay: Long
+        if (scheduledTime.before(currentTime)) {
+            scheduledTime.add(Calendar.DAY_OF_MONTH, 1)
+            initialDelay = scheduledTime.timeInMillis - currentTime.timeInMillis
+        } else {
+            initialDelay = scheduledTime.timeInMillis - currentTime.timeInMillis
+        }
+
+        val periodicWorkRequest = PeriodicWorkRequestBuilder<ExpCheckService>(1, TimeUnit.DAYS)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(context).enqueue(periodicWorkRequest)
+    }
+
+    private fun checkAndScheduleNotifications() {
+        val items = dbManager.readDbData("", idAid)
+        for (item in items) {
+            val timeReceipt = item.timeReceipt
+            if (timeReceipt.isNotEmpty()) {
+                val timeParts = timeReceipt.split(":")
+                if (timeParts.size == 2 && timeParts[0].isNotEmpty() && timeParts[1].isNotEmpty()) {
+                    val calendar = Calendar.getInstance()
+                    calendar.set(Calendar.HOUR_OF_DAY, timeParts[0].toInt())
+                    calendar.set(Calendar.MINUTE, timeParts[1].toInt())
+                    val title = item.title
+                    val message = "Время принять лекарство $title"
+                    val uniqueId = UUID.randomUUID().toString()
+                    scheduleNotification(title, message, calendar.timeInMillis, uniqueId)
+                } else {
+                    Log.e("TimeCheckService", "Invalid time format: $timeReceipt")
+                }
+            }
+        }
+    }
+
+    private fun scheduleNotification(title: String, message: String, triggerTimeMillis: Long, uniqueId: String) {
+        val data = Data.Builder()
+            .putString("title", title)
+            .putString("message", message)
+            .putString("uniqueId", uniqueId)
+            .build()
+
+        val constraints = Constraints.Builder()
+            .build()
+
+        val notificationWork = PeriodicWorkRequestBuilder<TimeCheckService>(1, TimeUnit.DAYS)
+            .setInputData(data)
+            .setInitialDelay(triggerTimeMillis - System.currentTimeMillis(), TimeUnit.MILLISECONDS)
+            .setConstraints(constraints)
+            .build()
+
+        workManager.enqueue(notificationWork)
     }
 
     override fun onResume() {
@@ -81,9 +146,17 @@ class EditActivity : AppCompatActivity() {
         dbManager.closeDb()
     }
 
-//    init {
-//        idAid = intent.getIntExtra(MyIntentAidConstants.I_ID_AID_KEY, -1)
-//    }
+    private fun showReminderDialog() {
+        val message = "Пожалуйста, не забудьте указать название и дату истечения срока годности перед сохранением."
+        AlertDialog.Builder(this)
+            .setTitle("Напоминание")
+            .setMessage(message)
+            .setPositiveButton("OK") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(false)
+            .show()
+    }
 
     fun onClickSave(view: View) {
         val myTitle = edTitle.text.toString()
@@ -96,15 +169,15 @@ class EditActivity : AppCompatActivity() {
 
         if (myTitle != "" && myExpData != "") {
             if (isEditState) {
-                //idAid = intent.getIntExtra(MyIntentAidConstants.I_ID_AID_KEY, -1)
                 dbManager.updateItem(myTitle, id, getCurrentTime(), myExpData, myTimeReceipt, myQuantity, myType, myFood, myDisc, idAid)
-                Log.d("MyLog", "update: " + idAid.toString())
             } else {
-                //idAid = intent.getIntExtra(MyIntentAidConstants.I_ID_AID_KEY, -1)
                 dbManager.insertToDb(myTitle, getCurrentTime(), myExpData, myTimeReceipt, myQuantity, myType, myFood, myDisc, idAid)
-                Log.d("MyLog", "insert: " + idAid.toString())
             }
+            scheduleMedicationCheckWork(this)
+            checkAndScheduleNotifications()
             finish()
+        } else {
+            showReminderDialog()
         }
     }
 
@@ -133,7 +206,7 @@ class EditActivity : AppCompatActivity() {
             val formatter = SimpleDateFormat("dd-MM-yy", Locale.getDefault())
             val selectedDate = Calendar.getInstance()
             selectedDate.set(selectedYear, selectedMonth, selectedDay)
-            edExpData.setText(formatter.format(selectedDate.time))
+            edExpData.text = formatter.format(selectedDate.time)
         }, year, month, day)
 
         datePickerDialog.show()
@@ -147,16 +220,13 @@ class EditActivity : AppCompatActivity() {
         val timePickerDialog = TimePickerDialog(
             this,
             { _: TimePicker, selectedHour: Int, selectedMinute: Int ->
-                // Обработайте выбранное время здесь
                 val medicationTime = String.format(
                     Locale.getDefault(),
                     "%02d:%02d",
                     selectedHour,
                     selectedMinute
                 )
-                // Назначьте напоминание о приеме лекарства
-                //MedicationReminderUtils.scheduleOneTimeNotification(this, medicationTime)
-                edTimeReceipt.setText(medicationTime)
+                edTimeReceipt.text = medicationTime
             },
             hour,
             minute,
@@ -190,7 +260,6 @@ class EditActivity : AppCompatActivity() {
                 fbEdit.visibility = View.VISIBLE
                 id = i.getIntExtra(MyIntentConstans.I_ID_KEY, 0)
                 idAid = intent.getIntExtra(MyIntentConstans.I_ID_AID_KEY, -1)
-                Log.d("MyLog", "getMyIntents: $idAid")
             }
         }
     }
@@ -200,4 +269,5 @@ class EditActivity : AppCompatActivity() {
         val formatter = SimpleDateFormat("dd-MM-yy", Locale.getDefault())
         return formatter.format(time)
     }
+
 }

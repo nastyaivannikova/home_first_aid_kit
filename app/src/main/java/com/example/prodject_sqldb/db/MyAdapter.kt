@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.drawable.GradientDrawable
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.prodject_sqldb.EditActivity
 import com.example.prodject_sqldb.R
+import java.text.SimpleDateFormat
 
 class MyAdapter(listMain:ArrayList<ListItem>, contextM: Context): RecyclerView.Adapter<MyAdapter.MyHolder>() {
     var listArray = listMain
@@ -22,13 +22,14 @@ class MyAdapter(listMain:ArrayList<ListItem>, contextM: Context): RecyclerView.A
     class MyHolder(itemView: View, contextV: Context) : RecyclerView.ViewHolder(itemView) {
         val tvTitle = itemView.findViewById<TextView>(R.id.tvTitle)
         val tvTime = itemView.findViewById<TextView>(R.id.tvTime)
+        val tvExpDate = itemView.findViewById<TextView>(R.id.tvExpDate)
         var context = contextV
-        var backgroundColors = HashMap<Int, Int>()
 
 
         fun setData(item:ListItem) {
             tvTitle.text = item.title
             tvTime.text = item.time
+            tvExpDate.text = item.expDate
 
 
             itemView.setOnClickListener{
@@ -57,7 +58,6 @@ class MyAdapter(listMain:ArrayList<ListItem>, contextM: Context): RecyclerView.A
     }
 
     override fun getItemCount(): Int {
-
         return listArray.size
     }
 
@@ -65,8 +65,6 @@ class MyAdapter(listMain:ArrayList<ListItem>, contextM: Context): RecyclerView.A
         val item = listArray[position]
         holder.setData(item)
 
-        // Определение цвета в зависимости от idAid
-        Log.d("MyLog", item.idAid.toString())
         val backgroundColor = if (item.idAid % 2 == 0) {
             ContextCompat.getColor(context, R.color.beige)
         } else {
@@ -81,14 +79,43 @@ class MyAdapter(listMain:ArrayList<ListItem>, contextM: Context): RecyclerView.A
             setColor(colorStateList)
         }
 
-        // Установка цвета фона
         holder.itemView.background = drawable
+
+        if (isExpired(item.expDate)) {
+            holder.tvTitle.setTextColor(ContextCompat.getColor(context, R.color.red))
+            holder.tvExpDate.setTextColor(ContextCompat.getColor(context, R.color.red))
+        } else {
+            holder.tvTitle.setTextColor(ContextCompat.getColor(context, R.color.black))
+            holder.tvExpDate.setTextColor(ContextCompat.getColor(context, R.color.black))
+        }
     }
 
+    @SuppressLint("SimpleDateFormat")
+    private fun isExpired(expDate: String): Boolean {
+        val currentDate = System.currentTimeMillis()
+        val expirationDate = SimpleDateFormat("dd-MM-yy").parse(expDate)?.time
+        return expirationDate!! < currentDate
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     fun updateAdapter(listItems:List<ListItem>) {
         listArray.clear()
         listArray.addAll(listItems)
         notifyDataSetChanged()
+    }
+
+    fun getItemName(position: Int): String {
+        return listArray[position].title
+    }
+
+    fun restoreItem(position: Int) {
+        if (position >= 0 && position < listArray.size) {
+            val item = listArray[position]
+            listArray.removeAt(position)
+            listArray.add(position, item)
+            notifyItemInserted(position)
+            notifyItemRangeChanged(position, listArray.size)
+        }
     }
 
     fun removeItem(pos: Int, dbManager: DbManager) {

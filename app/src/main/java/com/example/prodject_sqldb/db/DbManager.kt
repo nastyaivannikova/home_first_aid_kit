@@ -1,17 +1,9 @@
 package com.example.prodject_sqldb.db
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import android.icu.util.Calendar
-import android.os.Build
 import android.provider.BaseColumns
-import android.util.Log
-import androidx.core.app.NotificationCompat
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class DbManager(context: Context) {
     val dbHelper = DbHelper(context)
@@ -58,54 +50,37 @@ class DbManager(context: Context) {
 
     }
 
-    fun checkForExpiredMedicines(context: Context) {
-        val calendar = Calendar.getInstance()
-        val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
-
-        val expiredMedicines = readDbData("", -1).filter { it.expDate <= currentDate }
-
-        expiredMedicines.forEach { medicine ->
-            val title = "Лекарство просрочено: ${medicine.title}"
-            val message = "Дата истечения: ${medicine.expDate}"
-            sendNotification(context, title, message, medicine.id)
-        }
-    }
-
     fun readDbData(searchText: String, idAid: Int) : ArrayList<ListItem> {
         val dataList = ArrayList<ListItem>()
-        //val selection = "${DbNameClass.COLUMN_NAME_TITLE} like ?"
-        //val selectionArgs = arrayOf("%$searchText%")
         val selection = "${DbNameClass.COLUMN_NAME_TITLE} like ? AND ${DbNameClass.COLUMN_ID_AID} = ?"
         val selectionArgs = arrayOf("%$searchText%", idAid.toString())
-        //val selectionAnd = "${BaseColumns._ID} = ? AND ${DbNameClass.COLUMN_ID_AID} = ?"
-       // val selectionArgsAnd = arrayOf(selectionArgs[0], idAid.toString())
-          val cursor = db?.query(DbNameClass.TABLE_NAME, null, selection, selectionArgs, null, null, null)
-          while(cursor?.moveToNext()!!) { //not null
-              val dataTitle = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TITLE))
-              val dataId = cursor.getInt(cursor.getColumnIndexOrThrow(BaseColumns._ID))
-              val dataTime = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TIME))
-              val dataExpData = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_EXPIRATION_DATE))
-              val dataTimeReceipt = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TIME_RECEIPT))
-              val dataQuantity = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_QUANTITY))
-              val dataType = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TYPE))
-              val dataFood = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_FOOD_RELATION))
-              val dataContent = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_CONTENT))
-              val dataIdAid = cursor.getInt(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_ID_AID))
-              val item = ListItem()
-              item.title = dataTitle
-              item.id = dataId
-              item.time = dataTime
-              item.expDate= dataExpData
-              item.timeReceipt = dataTimeReceipt
-              item.quantity = dataQuantity
-              item.type = dataType
-              item.food = dataFood
-              item.desk = dataContent
-              item.idAid = dataIdAid
-              dataList.add(item)
-          }
-          cursor.close()
-          return dataList
+        val cursor = db?.query(DbNameClass.TABLE_NAME, null, selection, selectionArgs, null, null, null)
+        while(cursor?.moveToNext()!!) { //not null
+            val dataTitle = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TITLE))
+            val dataId = cursor.getInt(cursor.getColumnIndexOrThrow(BaseColumns._ID))
+            val dataTime = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TIME))
+            val dataExpData = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_EXPIRATION_DATE))
+            val dataTimeReceipt = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TIME_RECEIPT))
+            val dataQuantity = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_QUANTITY))
+            val dataType = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_TYPE))
+            val dataFood = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_FOOD_RELATION))
+            val dataContent = cursor.getString(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_NAME_CONTENT))
+            val dataIdAid = cursor.getInt(cursor.getColumnIndexOrThrow(DbNameClass.COLUMN_ID_AID))
+            val item = ListItem()
+            item.title = dataTitle
+            item.id = dataId
+            item.time = dataTime
+            item.expDate= dataExpData
+            item.timeReceipt = dataTimeReceipt
+            item.quantity = dataQuantity
+            item.type = dataType
+            item.food = dataFood
+            item.desk = dataContent
+            item.idAid = dataIdAid
+            dataList.add(item)
+        }
+        cursor.close()
+        return dataList
     }
 
     fun deleteAllByAidId(idAid: Int) {

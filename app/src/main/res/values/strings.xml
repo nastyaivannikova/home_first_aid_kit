@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Prodject_SQLdb</string>
+    <string name="app_name">Домашняя аптечка</string>
     <string name="id_title_hint">Название</string>
     <string name="id_desc_hint">Комментарий</string>
     <string name="id_quality_hint">Количество</string>

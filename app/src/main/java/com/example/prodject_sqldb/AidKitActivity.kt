@@ -1,23 +1,17 @@
 package com.example.prodject_sqldb
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.SearchView
-import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.prodject_sqldb.db.DbAidManager
-import com.example.prodject_sqldb.db.DbManager
-import com.example.prodject_sqldb.db.MyAdapter
 import com.example.prodject_sqldb.db.MyAidAdapter
-import com.example.prodject_sqldb.db.MyIntentAidConstants
 
 class AidKitActivity : AppCompatActivity() {
 
@@ -95,9 +89,26 @@ class AidKitActivity : AppCompatActivity() {
             }
 
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-                myAidAdapter.removeItem(viewHolder.adapterPosition, dbAidManager)
+                val position = viewHolder.adapterPosition
+                val itemName = myAidAdapter.getItemName(position)
+                showConfirmationDialog(itemName, position)
             }
 
         })
+    }
+
+    private fun showConfirmationDialog(itemName: String, position: Int) {
+        AlertDialog.Builder(this)
+            .setTitle("Удаление аптечки")
+            .setMessage("Вы уверены, что хотите удалить аптечку $itemName?")
+            .setPositiveButton("Yes") { dialog, _ ->
+                myAidAdapter.removeItem(position, dbAidManager)
+                dialog.dismiss()
+            }
+            .setNegativeButton("No") { dialog, _ ->
+                myAidAdapter.restoreItem(position)
+                dialog.dismiss()
+            }
+            .show()
     }
 }

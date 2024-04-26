@@ -3,9 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SEND_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+        tools:ignore="ProtectedPermissions" />
 
 
     <application
@@ -22,16 +26,11 @@
             android:name=".EditAidActivity"
             android:exported="false" />
         <service
-            android:name=".db.ExpirationWorkRequest"
-            android:exported="false"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
+            android:name=".db.ExpCheckService"
+            android:foregroundServiceType="location" />
         <receiver
-            android:name=".db.AlarmReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
+            android:name=".db.TimeCheckService"
+            android:exported="false"/>
         <activity
             android:name=".EditActivity"
             android:exported="false" />

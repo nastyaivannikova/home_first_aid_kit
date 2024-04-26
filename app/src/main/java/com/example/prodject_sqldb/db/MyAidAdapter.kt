@@ -1,5 +1,6 @@
 package com.example.prodject_sqldb.db
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -38,7 +39,6 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
 
                 }
                 context.startActivity(intent)
-                Log.d("MyLog", "item" + item.id.toString());
             }
         }
     }
@@ -56,7 +56,6 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
     override fun onBindViewHolder(holder: MyHolder, position: Int) {
         holder.setData(listArray[position])
 
-        // Определение цвета фона для элемента на основе его позиции
         val backgroundColor = if (position % 2 == 0) {
             ContextCompat.getColor(context, R.color.light_green)
         } else {
@@ -68,19 +67,21 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
         val drawable = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             cornerRadius = 20f
-            setColor(colorStateList)
+            color = colorStateList
         }
 
         holder.itemView.background = drawable
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun updateAdapter(listItems:List<ListAidItem>) {
         listArray.clear()
         listArray.addAll(listItems)
         notifyDataSetChanged()
     }
 
-    fun updateColors(startIndex: Int) {
+    @SuppressLint("NotifyDataSetChanged")
+    private fun updateColors(startIndex: Int) {
         var colorIndex = startIndex % 2
         for (i in startIndex until listArray.size) {
             val backgroundColor = if (colorIndex % 2 == 0) {
@@ -89,12 +90,24 @@ class MyAidAdapter(listMain:ArrayList<ListAidItem>, contextM: Context): Recycler
                 ContextCompat.getColor(context, R.color.light_green)
             }
 
-            backgroundColors[i] = backgroundColor // Сохраняем цвет фона для элемента
+            backgroundColors[i] = backgroundColor
             colorIndex++
         }
         notifyDataSetChanged()
     }
 
+    fun getItemName(position: Int): String {
+        return listArray[position].title
+    }
+
+    fun restoreItem(position: Int) {
+        val item = listArray.removeAt(position)
+        listArray.add(position, item)
+        notifyItemInserted(position)
+        updateColors(position)
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     fun removeItem(pos: Int, dbAidManager: DbAidManager) {
         val removedItemId = listArray[pos].id
         dbAidManager.deleteAllByAidId(removedItemId)
